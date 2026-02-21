@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 
+// Safe API URL resolution
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function App() {
   const [image, setImage] = useState(null);
   const [password, setPassword] = useState("");
@@ -23,7 +27,7 @@ function App() {
     formData.append("password", password);
 
     try {
-      const response = await fetch("http://localhost:5000/encrypt", {
+      const response = await fetch(`${API_URL}/encrypt`, {
         method: "POST",
         body: formData,
       });
@@ -35,7 +39,6 @@ function App() {
       }
 
       const data = await response.json();
-
       setEncryptedData(data);
 
       // Download encrypted JSON automatically
@@ -94,7 +97,7 @@ function App() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/decrypt", {
+      const response = await fetch(`${API_URL}/decrypt`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -111,7 +114,6 @@ function App() {
         return;
       }
 
-      // IMPORTANT: handle as blob (binary)
       const blob = await response.blob();
 
       const url = URL.createObjectURL(blob);
@@ -132,7 +134,7 @@ function App() {
 
   return (
     <div style={{ padding: "40px", fontFamily: "Arial" }}>
-      <h1>Classified  Images</h1>
+      <h1>Classified</h1>
 
       <hr />
 
@@ -158,7 +160,11 @@ function App() {
 
       <h2>Decrypt Image</h2>
 
-      <input type="file" accept=".json" onChange={handleEncryptedUpload} />
+      <input
+        type="file"
+        accept=".json"
+        onChange={handleEncryptedUpload}
+      />
       <br /><br />
 
       <input
