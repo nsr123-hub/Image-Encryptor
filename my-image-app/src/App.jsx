@@ -5,10 +5,12 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function App() {
   const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [encryptPassword, setEncryptPassword] = useState("");
   const [decryptPassword, setDecryptPassword] = useState("");
   const [encryptedData, setEncryptedData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [decryptedPreview, setDecryptedPreview] = useState(null);
 
   // ---------------- ENCRYPT ----------------
   const handleEncrypt = async () => {
@@ -85,6 +87,7 @@ function App() {
         }
 
         setEncryptedData(parsed);
+        setDecryptedPreview(null); // reset previous preview
         alert("Encrypted JSON loaded successfully.");
       } catch (err) {
         alert("Invalid JSON file.");
@@ -132,6 +135,11 @@ function App() {
       const blob = await response.blob();
       const extension = encryptedData.mime_type.split("/")[1] || "png";
       const url = URL.createObjectURL(blob);
+
+      // Show preview
+      setDecryptedPreview(url);
+
+      // Download automatically
       const a = document.createElement("a");
       a.href = url;
       a.download = `decrypted_image.${extension}`;
@@ -150,7 +158,7 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "40px", fontFamily: "Arial" }}>
+    <div style={{ padding: "40px", fontFamily: "Arial", maxWidth: "600px", margin: "auto" }}>
       <h1>Classified Images</h1>
 
       <hr />
@@ -159,10 +167,18 @@ function App() {
       <input
         type="file"
         accept="image/*"
-        onChange={(e) => setImage(e.target.files[0])}
+        onChange={(e) => {
+          const file = e.target.files[0];
+          setImage(file);
+          if (file) setImagePreview(URL.createObjectURL(file));
+        }}
         disabled={loading}
       />
-      <br />
+      {imagePreview && (
+        <div style={{ marginTop: "10px" }}>
+          <img src={imagePreview} alt="Preview" style={{ maxWidth: "100%" }} />
+        </div>
+      )}
       <br />
       <input
         type="password"
@@ -200,6 +216,13 @@ function App() {
       <button onClick={handleDecrypt} disabled={loading}>
         {loading ? "Decrypting..." : "Decrypt"}
       </button>
+
+      {decryptedPreview && (
+        <div style={{ marginTop: "10px" }}>
+          <h3>Decrypted Preview:</h3>
+          <img src={decryptedPreview} alt="Decrypted" style={{ maxWidth: "100%" }} />
+        </div>
+      )}
 
       {loading && <p>Processing… please wait</p>}
     </div>
