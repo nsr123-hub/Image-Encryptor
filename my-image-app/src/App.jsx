@@ -1,31 +1,33 @@
 import React, { useState } from "react";
 
 // Safe API URL resolution
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 function App() {
   const [image, setImage] = useState(null);
-  const [password, setPassword] = useState("");
+  const [encryptPassword, setEncryptPassword] = useState("");
+  const [decryptPassword, setDecryptPassword] = useState("");
   const [encryptedData, setEncryptedData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // ---------------- ENCRYPT ----------------
-
   const handleEncrypt = async () => {
+    if (loading) return;
+
     if (!image) {
       alert("Please select an image.");
       return;
     }
-
-    if (!password) {
-      alert("Please enter password.");
+    if (!encryptPassword) {
+      alert("Please enter password for encryption.");
       return;
     }
 
+    setLoading(true);
+
     const formData = new FormData();
-    // backend expects the file field to be named "file"
     formData.append("file", image);
-    formData.append("password", password);
+    formData.append("password", encryptPassword);
 
     try {
       const response = await fetch(`${API_URL}/encrypt`, {
@@ -46,7 +48,6 @@ function App() {
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
-
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -60,17 +61,17 @@ function App() {
     } catch (error) {
       console.error(error);
       alert("Encryption error");
+    } finally {
+      setLoading(false);
     }
   };
 
   // ---------------- UPLOAD ENCRYPTED JSON ----------------
-
   const handleEncryptedUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-
     reader.onload = (e) => {
       try {
         const parsed = JSON.parse(e.target.result);
@@ -80,33 +81,29 @@ function App() {
         alert("Invalid JSON file.");
       }
     };
-
     reader.readAsText(file);
   };
 
   // ---------------- DECRYPT ----------------
-
   const handleDecrypt = async () => {
+    if (loading) return;
+
     if (!encryptedData) {
       alert("Upload encrypted JSON first.");
       return;
     }
-
-    if (!password) {
-      alert("Enter password.");
+    if (!decryptPassword) {
+      alert("Enter password for decryption.");
       return;
     }
+
+    setLoading(true);
 
     try {
       const response = await fetch(`${API_URL}/decrypt`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...encryptedData,
-          password: password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...encryptedData, password: decryptPassword }),
       });
 
       if (!response.ok) {
@@ -116,7 +113,6 @@ function App() {
       }
 
       const blob = await response.blob();
-
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -130,6 +126,8 @@ function App() {
     } catch (error) {
       console.error(error);
       alert("Decryption error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,39 +142,44 @@ function App() {
         type="file"
         accept="image/*"
         onChange={(e) => setImage(e.target.files[0])}
+        disabled={loading}
       />
       <br /><br />
-
       <input
         type="password"
         placeholder="Enter password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        value={encryptPassword}
+        onChange={(e) => setEncryptPassword(e.target.value)}
+        disabled={loading}
       />
       <br /><br />
-
-      <button onClick={handleEncrypt}>Encrypt</button>
+      <button onClick={handleEncrypt} disabled={loading}>
+        {loading ? "Encrypting..." : "Encrypt"}
+      </button>
 
       <hr />
 
       <h2>Decrypt Image</h2>
-
       <input
         type="file"
         accept=".json"
         onChange={handleEncryptedUpload}
+        disabled={loading}
       />
       <br /><br />
-
       <input
         type="password"
         placeholder="Enter password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        value={decryptPassword}
+        onChange={(e) => setDecryptPassword(e.target.value)}
+        disabled={loading}
       />
       <br /><br />
+      <button onClick={handleDecrypt} disabled={loading}>
+        {loading ? "Decrypting..." : "Decrypt"}
+      </button>
 
-      <button onClick={handleDecrypt}>Decrypt</button>
+      {loading && <p>Processing… please wait</p>}
     </div>
   );
 }
