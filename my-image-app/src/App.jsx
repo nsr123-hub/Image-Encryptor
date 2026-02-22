@@ -23,7 +23,8 @@ function App() {
     }
 
     const formData = new FormData();
-    formData.append("image", image);
+    // backend expects the file field to be named "file"
+    formData.append("file", image);
     formData.append("password", password);
 
     try {
@@ -134,7 +135,7 @@ function App() {
 
   return (
     <div style={{ padding: "40px", fontFamily: "Arial" }}>
-      <h1>Classified</h1>
+      <h1>Classified Images</h1>
 
       <hr />
 
