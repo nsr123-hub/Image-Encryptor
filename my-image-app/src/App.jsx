@@ -75,6 +75,15 @@ function App() {
     reader.onload = (e) => {
       try {
         const parsed = JSON.parse(e.target.result);
+
+        // Validate required keys
+        const requiredKeys = ["salt", "nonce", "ciphertext", "mime_type"];
+        const missing = requiredKeys.filter((k) => !(k in parsed));
+        if (missing.length > 0) {
+          alert("Invalid JSON file. Missing: " + missing.join(", "));
+          return;
+        }
+
         setEncryptedData(parsed);
         alert("Encrypted JSON loaded successfully.");
       } catch (err) {
@@ -97,13 +106,21 @@ function App() {
       return;
     }
 
+    const payload = {
+      salt: encryptedData.salt,
+      nonce: encryptedData.nonce,
+      ciphertext: encryptedData.ciphertext,
+      mime_type: encryptedData.mime_type,
+      password: decryptPassword,
+    };
+
     setLoading(true);
 
     try {
       const response = await fetch(`${API_URL}/decrypt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...encryptedData, password: decryptPassword }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -113,10 +130,11 @@ function App() {
       }
 
       const blob = await response.blob();
+      const extension = encryptedData.mime_type.split("/")[1] || "png";
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "decrypted_image";
+      a.download = `decrypted_image.${extension}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -144,7 +162,8 @@ function App() {
         onChange={(e) => setImage(e.target.files[0])}
         disabled={loading}
       />
-      <br /><br />
+      <br />
+      <br />
       <input
         type="password"
         placeholder="Enter password"
@@ -152,7 +171,8 @@ function App() {
         onChange={(e) => setEncryptPassword(e.target.value)}
         disabled={loading}
       />
-      <br /><br />
+      <br />
+      <br />
       <button onClick={handleEncrypt} disabled={loading}>
         {loading ? "Encrypting..." : "Encrypt"}
       </button>
@@ -166,7 +186,8 @@ function App() {
         onChange={handleEncryptedUpload}
         disabled={loading}
       />
-      <br /><br />
+      <br />
+      <br />
       <input
         type="password"
         placeholder="Enter password"
@@ -174,7 +195,8 @@ function App() {
         onChange={(e) => setDecryptPassword(e.target.value)}
         disabled={loading}
       />
-      <br /><br />
+      <br />
+      <br />
       <button onClick={handleDecrypt} disabled={loading}>
         {loading ? "Decrypting..." : "Decrypt"}
       </button>
